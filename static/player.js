@@ -347,7 +347,16 @@
     if (push) history.pushState({}, "", url);
     var current = document.querySelector("main");
     current.replaceWith(document.importNode(incoming, true));
-    document.title = doc.title;
+    var docEl = doc.documentElement;
+    var cur = document.documentElement;
+    ["data-title-fa", "data-title-en", "data-default-lang"].forEach(function (a) {
+      var v = docEl.getAttribute(a);
+      if (v !== null) cur.setAttribute(a, v);
+    });
+    // Each page opens in its own content language.
+    var def = cur.getAttribute("data-default-lang") || "fa";
+    if (window.applyLang) window.applyLang(def);
+    else document.title = doc.title;
     var u = new URL(url, location.href);
     loadedKey = u.pathname + u.search;
     refreshTracks();

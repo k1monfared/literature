@@ -1,5 +1,11 @@
 /* Literature site styles. Shared base/nav styles come from site_kit. */
 
+/* Show only the active UI language (both are embedded in the page). */
+html[data-ui-lang="fa"] [data-lang="en"],
+html[data-ui-lang="en"] [data-lang="fa"] {
+  display: none;
+}
+
 /* Keep in-page anchor targets clear of the sticky header. */
 html {
   scroll-padding-top: 5rem;

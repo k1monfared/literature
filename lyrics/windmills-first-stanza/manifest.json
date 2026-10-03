@@ -1,0 +1,19 @@
+{
+  "title": "The Windmills of Your Mind, first stanza",
+  "song": "windmills-first-stanza",
+  "lyrics": "scripts/lyrics/windmills_first_stanza.txt",
+  "model": "flux",
+  "width": 768,
+  "height": 768,
+  "html": "lyrics/windmills-first-stanza/index.html",
+  "entries": [
+    {
+      "number": 1,
+      "stanza": 1,
+      "line": "Round like a circle in a spiral, like a wheel within a wheel",
+      "seed": 94861739,
+      "image": "lyrics/windmills-first-stanza/images/windmills-first-stanza-001.jpg",
+      "prompt": "A square panel in one continuous dream space: the same dim blue room open to a vast night sky, a spiral stair dissolving into cloud, sheer curtains drifting, pale moon haze, floating dust, muted indigo, slate, and silver, soft focus, tender surrealism, melancholic and quiet. Keep this exact room, palette, light, camera distance, and mood across every panel. Use at most one lone androgynous figure, seen from behind or partly obscured, only when the lyric calls for it. Illustrate the lyric below as one symbolic image inside that shared room, no words, no lettering, no watermark.\nLyric 1 of 1 from The Windmills of Your Mind, first stanza: Round like a circle in a spiral, like a wheel within a wheel"
+    }
+  ]
+}

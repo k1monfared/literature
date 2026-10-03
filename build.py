@@ -38,38 +38,40 @@ LIT_DIR = Path(__file__).resolve().parent
 SITE_DIR = LIT_DIR / "_site"
 TEMPLATE_DIR = LIT_DIR / "templates"
 STATIC_DIR = LIT_DIR / "static"
+LYRICS_DIR = LIT_DIR / "lyrics"
 
-EXCLUDE_DIRS = {"_site", "templates", "static", "scripts", "__pycache__", ".git"}
+EXCLUDE_DIRS = {"_site", "templates", "static", "scripts", "lyrics", "secrets", "__pycache__", ".git"}
 MD_EXTENSIONS = ["extra", "toc", "sane_lists", "md_in_html"]
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif"}
 AUDIO_EXTS = {".m4a", ".mp3", ".ogg", ".oga", ".wav", ".flac", ".opus", ".aac", ".m4b"}
 
-LABELS = {
-    "fa": {
-        "poets_heading": "پدیدآورندگان",
-        "books_heading": "آثار",
-        "book_count": "{n} اثر",
-        "back_home": "همهٔ پدیدآورندگان",
-        "back_poet": "بازگشت به آثار این پدیدآورنده",
-        "listen": "شنیدن",
-        "wiki_link": "بیشتر در ویکی‌پدیا",
-        "lang_switch": "EN",
-        "lang_switch_title": "Read this page in English",
-        "footer": "مجموعه ادبیات",
-    },
-    "en": {
-        "poets_heading": "Authors",
-        "books_heading": "Works",
-        "book_count": "{n} work(s)",
-        "back_home": "All authors",
-        "back_poet": "Back to this author's works",
-        "listen": "Listen",
-        "wiki_link": "Read more on Wikipedia",
-        "lang_switch": "فا",
-        "lang_switch_title": "این صفحه را به فارسی بخوانید",
-        "footer": "Literature collection",
-    },
+# UI strings as (fa, en) pairs. Both languages are embedded in each page and
+# the language button swaps them client-side.
+STRINGS = {
+    "authors": ("پدیدآورندگان", "Authors"),
+    "works": ("آثار", "Works"),
+    "work_count": ("{n} اثر", "{n} work(s)"),
+    "all_authors": ("همهٔ پدیدآورندگان", "All authors"),
+    "back_works": ("بازگشت به آثار این پدیدآورنده", "Back to this author's works"),
+    "listen": ("شنیدن", "Listen"),
+    "wiki": ("بیشتر در ویکی‌پدیا", "Read more on Wikipedia"),
+    "footer": ("مجموعه ادبیات", "Literature collection"),
 }
+
+
+def bi(fa, en):
+    """Return both language variants; CSS/JS show the active one."""
+    fa = "" if fa is None else str(fa)
+    en = "" if en is None else str(en)
+    return (
+        f'<span data-lang="fa">{html.escape(fa)}</span>'
+        f'<span data-lang="en">{html.escape(en)}</span>'
+    )
+
+
+def work_count(n, lang):
+    fa, en = STRINGS["work_count"]
+    return (fa if lang == "fa" else en).format(n=n)
 
 
 def unicode_slugify(value, separator="-"):
@@ -373,201 +375,204 @@ def build():
     for asset in STATIC_DIR.iterdir():
         if asset.is_file():
             shutil.copy2(asset, SITE_DIR / "static" / asset.name)
+    if LYRICS_DIR.exists():
+        shutil.copytree(LYRICS_DIR, SITE_DIR / "lyrics")
 
-    def site_title(lang):
-        return site_meta.get(f"title_{lang}") or ("ادبیات" if lang == "fa" else "Literature")
+    site_fa = site_meta.get("title_fa") or "ادبیات"
+    site_en = site_meta.get("title_en") or "Literature"
+    site_default = site_meta.get("default_lang") or "fa"
 
-    def tagline(lang):
-        return site_meta.get(f"tagline_{lang}") or ""
-
-    def footer(lang):
-        return LABELS[lang]["footer"]
-
-    # ---- asset copy + book metadata ----
+    # ---- assets + work metadata ----
     for poet in poets:
         for book in poet["books"]:
             bdir = book["dir"]
             bmeta = load_yaml(book.get("meta_path") or (bdir / "book.yml"))
             md_text = book["md"].read_text(encoding="utf-8")
-            auto_title = first_heading(md_text)
+            auto_title = first_heading(md_text) or book["slug"]
             media_dir = SITE_DIR / "media" / poet["slug"] / book["slug"]
             cover_src = find_asset(bdir, IMAGE_EXTS, bmeta.get("cover"), keyword="cover")
             audio_src = find_asset(bdir, AUDIO_EXTS, bmeta.get("audio"))
             book["cover"] = copy_asset(cover_src, media_dir, "cover" + cover_src.suffix.lower()) if cover_src else None
             book["audio"] = copy_asset(audio_src, media_dir, "audio" + audio_src.suffix.lower()) if audio_src else None
             book["meta"] = bmeta
-            book["auto_title"] = auto_title or book["slug"]
+            book["auto_title"] = auto_title
             book["content_dir"] = content_dir(md_text)
             book["html"] = md_to_html(md_text)
 
-    def book_title(book, lang):
-        return book["meta"].get(f"title_{lang}") or book["auto_title"]
+    def poet_name(poet):
+        meta = poet["meta"]
+        slug = poet["slug"].replace("_", " ").title()
+        return meta.get("name_fa") or slug, meta.get("name_en") or slug
 
-    def poet_name(poet, lang):
-        return poet["meta"].get(f"name_{lang}") or poet["slug"].replace("_", " ").title()
+    def book_title(book):
+        meta = book["meta"]
+        return meta.get("title_fa") or book["auto_title"], meta.get("title_en") or book["auto_title"]
 
-    # ---- path helpers for the two language trees ----
-    def out_home(lang):
-        return SITE_DIR / "index.html" if lang == "fa" else SITE_DIR / "en" / "index.html"
+    def book_field(book, field):
+        meta = book["meta"]
+        return meta.get(f"{field}_fa") or "", meta.get(f"{field}_en") or ""
 
-    def out_poet(lang, poet):
-        base = SITE_DIR if lang == "fa" else SITE_DIR / "en"
-        return base / poet["slug"] / "index.html"
+    def poet_lang(poet):
+        return poet["meta"].get("lang") or site_default
 
-    def out_book(lang, poet, book):
-        base = SITE_DIR if lang == "fa" else SITE_DIR / "en"
-        return base / poet["slug"] / book["slug"] / "index.html"
+    def book_lang(book):
+        return book["meta"].get("lang") or ("fa" if book["content_dir"] == "rtl" else "en")
 
-    def page(lang, out_path, title, content, switch_to, crumb=""):
-        home = out_home(lang)
+    def out_home():
+        return SITE_DIR / "index.html"
+
+    def out_poet(poet):
+        return SITE_DIR / poet["slug"] / "index.html"
+
+    def out_book(poet, book):
+        return SITE_DIR / poet["slug"] / book["slug"] / "index.html"
+
+    def page(out_path, title_fa, title_en, content, default_lang, crumb=""):
         html_out = render(
             "base.html",
-            lang=lang,
+            lang=default_lang,
+            dir="rtl" if default_lang == "fa" else "ltr",
+            title=title_fa if default_lang == "fa" else title_en,
+            title_fa=html.escape(title_fa, quote=True),
+            title_en=html.escape(title_en, quote=True),
+            site_title=bi(site_fa, site_en),
+            home_url=rel(out_path, out_home()),
             crumb=crumb,
-            dir="rtl" if lang == "fa" else "ltr",
-            title=title,
-            site_title=site_title(lang),
-            home_url=rel(out_path, home),
-            lang_switch_url=rel(out_path, switch_to),
-            lang_switch_label=LABELS[lang]["lang_switch"],
-            lang_switch_title=LABELS[lang]["lang_switch_title"],
             style_url=rel(out_path, SITE_DIR / "static" / "style.css"),
             script_url=rel(out_path, SITE_DIR / "static" / "player.js"),
             footnotes_script_url=rel(out_path, SITE_DIR / "static" / "footnotes.js"),
+            lang_script_url=rel(out_path, SITE_DIR / "static" / "lang.js"),
             content=content,
-            footer=footer(lang),
+            footer=bi(*STRINGS["footer"]),
         )
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(html_out, encoding="utf-8")
 
-    # ---- home pages ----
-    for lang in ("fa", "en"):
-        cards = []
-        for poet in sorted(poets, key=lambda p: poet_name(p, lang)):
-            poet_out = out_poet(lang, poet)
-            href = rel(out_home(lang), poet_out, is_dir=True)
-            n = len(poet["books"])
-            links = []
-            for book in sorted(poet["books"], key=lambda b: book_title(b, lang)):
-                links.append(
-                    f'<li><a href="{rel(out_home(lang), out_book(lang, poet, book), is_dir=True)}">'
-                    f'{html.escape(book_title(book, lang))}</a></li>'
-                )
-            cards.append(
-                '<li class="card poet-card">'
-                f'<a class="card-main" href="{href}">'
-                f'<span class="card-text"><span class="card-title">{html.escape(poet_name(poet, lang))}</span>'
-                f'<span class="card-meta">{LABELS[lang]["book_count"].format(n=n)}</span></span></a>'
-                f'<ul class="book-links">{"".join(links)}</ul>'
-                "</li>"
+    # ---- home ----
+    cards = []
+    for poet in sorted(poets, key=lambda p: poet_name(p)[0]):
+        fa, en = poet_name(poet)
+        n = len(poet["books"])
+        links = []
+        for book in sorted(poet["books"], key=lambda b: book_title(b)[0]):
+            bfa, ben = book_title(book)
+            links.append(
+                f'<li><a href="{rel(out_home(), out_book(poet, book), is_dir=True)}">{bi(bfa, ben)}</a></li>'
             )
-        content = render(
-            "home.html",
-            heading=LABELS[lang]["poets_heading"],
-            tagline=tagline(lang),
-            items="\n".join(cards),
+        cards.append(
+            '<li class="card poet-card">'
+            f'<a class="card-main" href="{rel(out_home(), out_poet(poet), is_dir=True)}">'
+            f'<span class="card-text"><span class="card-title">{bi(fa, en)}</span>'
+            f'<span class="card-meta">{bi(work_count(n, "fa"), work_count(n, "en"))}</span></span></a>'
+            f'<ul class="book-links">{"".join(links)}</ul>'
+            "</li>"
         )
-        page(lang, out_home(lang), site_title(lang), content, out_home("en" if lang == "fa" else "fa"))
+    content = render(
+        "home.html",
+        heading=bi(*STRINGS["authors"]),
+        tagline=bi(site_meta.get("tagline_fa") or "", site_meta.get("tagline_en") or ""),
+        items="\n".join(cards),
+    )
+    page(out_home(), site_fa, site_en, content, site_default)
 
-    # ---- poet pages ----
-    for lang in ("fa", "en"):
-        for poet in poets:
-            out = out_poet(lang, poet)
-            cards = []
-            for book in sorted(poet["books"], key=lambda b: book_title(b, lang)):
-                thumb = ""
-                if book["cover"]:
-                    thumb_url = rel(out, book["cover"])
-                    thumb = f'<img class="card-thumb" src="{thumb_url}" alt="">'
-                sub = book["meta"].get(f"subtitle_{lang}") or ""
-                cards.append(
-                    f'<li class="card"><a href="{rel(out, out_book(lang, poet, book), is_dir=True)}">'
-                    f'{thumb}<span class="card-text"><span class="card-title">{html.escape(book_title(book, lang))}</span>'
-                    f'<span class="card-meta">{html.escape(sub)}</span></span></a></li>'
+    # ---- author pages ----
+    for poet in poets:
+        out = out_poet(poet)
+        fa, en = poet_name(poet)
+        cards = []
+        for book in sorted(poet["books"], key=lambda b: book_title(b)[0]):
+            bfa, ben = book_title(book)
+            thumb = f'<img class="card-thumb" src="{rel(out, book["cover"])}" alt="">' if book["cover"] else ""
+            sfa, sen = book_field(book, "subtitle")
+            cards.append(
+                f'<li class="card"><a href="{rel(out, out_book(poet, book), is_dir=True)}">'
+                f'{thumb}<span class="card-text"><span class="card-title">{bi(bfa, ben)}</span>'
+                f'<span class="card-meta">{bi(sfa, sen)}</span></span></a></li>'
+            )
+        wiki_parts = []
+        wfa = poet["meta"].get("wiki_fa") or poet["meta"].get("wiki") or ""
+        wen = poet["meta"].get("wiki_en") or poet["meta"].get("wiki") or ""
+        if wfa:
+            wiki_parts.append(
+                f'<span data-lang="fa"><a href="{html.escape(str(wfa), quote=True)}" target="_blank" rel="noopener">{html.escape(STRINGS["wiki"][0])}</a></span>'
+            )
+        if wen:
+            wiki_parts.append(
+                f'<span data-lang="en"><a href="{html.escape(str(wen), quote=True)}" target="_blank" rel="noopener">{html.escape(STRINGS["wiki"][1])}</a></span>'
+            )
+        wiki = f'<p class="bio">{"".join(wiki_parts)}</p>' if wiki_parts else ""
+        content = render(
+            "poet.html",
+            name=bi(fa, en),
+            wiki=wiki,
+            books_heading=bi(*STRINGS["works"]),
+            books="\n".join(cards),
+            home_url=rel(out, out_home()),
+            back_label=bi(*STRINGS["all_authors"]),
+        )
+        page(out, f"{fa} — {site_fa}", f"{en} — {site_en}", content, poet_lang(poet))
+
+    # ---- work pages ----
+    for poet in poets:
+        pfa, pen = poet_name(poet)
+        for book in poet["books"]:
+            out = out_book(poet, book)
+            tfa, ten = book_title(book)
+            sfa, sen = book_field(book, "subtitle")
+            rfa, ren = book_field(book, "reader")
+            src = rel(out, book["audio"]) if book["audio"] else ""
+            cover = rel(out, book["cover"]) if book["cover"] else ""
+            href = rel(out, out_book(poet, book))
+            native_fa = book["content_dir"] == "rtl"
+            display_title = tfa if native_fa else ten
+            display_poet = pfa if native_fa else pen
+            display_sub = sfa if native_fa else sen
+            cover_html = (
+                f'<figure class="cover-figure"><img src="{cover}" alt="{html.escape(ten, quote=True)}"></figure>'
+                if book["cover"] else ""
+            )
+            audio_html = ""
+            if book["audio"]:
+                audio_html = (
+                    '<div class="book-audio">'
+                    f'<button class="play-track" data-src="{src}" data-title="{html.escape(display_title, quote=True)}"'
+                    f' data-poet="{html.escape(display_poet, quote=True)}" data-subtitle="{html.escape(display_sub, quote=True)}"'
+                    f' data-cover="{cover}" data-href="{href}">'
+                    f'<span class="ico">{_SVG_PLAY}</span>'
+                    f'<span class="lbl">{bi(*STRINGS["listen"])}</span></button>'
+                    f'<noscript><audio controls preload="metadata" src="{src}"></audio></noscript>'
+                    "</div>"
                 )
-            wiki_url = poet["meta"].get(f"wiki_{lang}") or poet["meta"].get("wiki") or ""
-            wiki = ""
-            if wiki_url:
-                wiki = (
-                    f'<p class="bio"><a href="{html.escape(str(wiki_url), quote=True)}"'
-                    f' target="_blank" rel="noopener">{LABELS[lang]["wiki_link"]}</a></p>'
+            body_html = book["html"]
+            tracks = book["meta"].get("tracks") or []
+            if book["audio"] and tracks:
+                body_html = inject_tracks(
+                    body_html, tracks, src=src, poet=display_poet,
+                    subtitle=display_sub, cover=cover, href=href,
                 )
             content = render(
-                "poet.html",
-                name=html.escape(poet_name(poet, lang)),
-                wiki=wiki,
-                books_heading=LABELS[lang]["books_heading"],
-                books="\n".join(cards),
-                home_url=rel(out, out_home(lang)),
-                back_label=LABELS[lang]["back_home"],
+                "book.html",
+                title=bi(tfa, ten),
+                subtitle=bi(sfa, sen),
+                reader=bi(rfa, ren),
+                cover=cover_html,
+                audio=audio_html,
+                body=body_html,
+                body_dir=book["content_dir"],
+                poet_url=rel(out, out_poet(poet), is_dir=True),
+                back_label=bi(*STRINGS["back_works"]),
             )
-            page(lang, out, f"{poet_name(poet, lang)} — {site_title(lang)}", content,
-                 out_poet("en" if lang == "fa" else "fa", poet))
+            crumb = (
+                '<span class="crumb"><span class="sep">/</span>'
+                f'<a href="{rel(out, out_poet(poet), is_dir=True)}">{bi(pfa, pen)}</a>'
+                '<span class="sep">/</span>'
+                f'<span class="crumb-current">{bi(tfa, ten)}</span></span>'
+            )
+            page(out, f"{tfa} — {site_fa}", f"{ten} — {site_en}", content, book_lang(book), crumb=crumb)
 
-    # ---- book pages ----
-    for lang in ("fa", "en"):
-        for poet in poets:
-            for book in poet["books"]:
-                out = out_book(lang, poet, book)
-                cover_html = ""
-                if book["cover"]:
-                    cover_html = (
-                        f'<figure class="cover-figure">'
-                        f'<img src="{rel(out, book["cover"])}" alt="{html.escape(book_title(book, lang))}">'
-                        f"</figure>"
-                    )
-                src = rel(out, book["audio"]) if book["audio"] else ""
-                cover = rel(out, book["cover"]) if book["cover"] else ""
-                href = rel(out, out_book(lang, poet, book))
-                title = html.escape(book_title(book, lang), quote=True)
-                poet_attr = html.escape(poet_name(poet, lang), quote=True)
-                subtitle_val = book["meta"].get(f"subtitle_{lang}") or ""
-                subtitle = html.escape(subtitle_val, quote=True)
-                audio_html = ""
-                if book["audio"]:
-                    audio_html = (
-                        '<div class="book-audio">'
-                        f'<button class="play-track" data-src="{src}" data-title="{title}"'
-                        f' data-poet="{poet_attr}" data-subtitle="{subtitle}"'
-                        f' data-cover="{cover}" data-href="{href}">'
-                        f'<span class="ico">{_SVG_PLAY}</span>'
-                        f'<span class="lbl">{LABELS[lang]["listen"]}</span></button>'
-                        f'<noscript><audio controls preload="metadata" src="{src}"></audio></noscript>'
-                        "</div>"
-                    )
-                body_html = book["html"]
-                tracks = book["meta"].get("tracks") or []
-                if book["audio"] and tracks:
-                    body_html = inject_tracks(
-                        body_html, tracks,
-                        src=src, poet=poet_name(poet, lang), subtitle=subtitle_val,
-                        cover=cover, href=href,
-                    )
-                content = render(
-                    "book.html",
-                    title=html.escape(book_title(book, lang)),
-                    subtitle=html.escape(subtitle_val),
-                    reader=html.escape(book["meta"].get(f"reader_{lang}") or ""),
-                    cover=cover_html,
-                    audio=audio_html,
-                    body=body_html,
-                    body_dir=book["content_dir"],
-                    poet_url=rel(out, out_poet(lang, poet), is_dir=True),
-                    back_label=LABELS[lang]["back_poet"],
-                )
-                crumb = (
-                    '<span class="crumb">'
-                    f'<span class="sep">/</span>'
-                    f'<a href="{rel(out, out_poet(lang, poet), is_dir=True)}">{html.escape(poet_name(poet, lang))}</a>'
-                    f'<span class="sep">/</span>'
-                    f'<span class="crumb-current">{html.escape(book_title(book, lang))}</span>'
-                    "</span>"
-                )
-                page(lang, out, f"{book_title(book, lang)} — {site_title(lang)}", content,
-                     out_book("en" if lang == "fa" else "fa", poet, book), crumb=crumb)
-
-    n_pages = sum(len(p["books"]) for p in poets) * 2 + len(poets) * 2 + 2
-    print(f"Built {len(poets)} poet(s), {sum(len(p['books']) for p in poets)} book(s), {n_pages} pages.")
+    n_poets = len(poets)
+    n_works = sum(len(p["books"]) for p in poets)
+    print(f"Built {n_poets} author(s), {n_works} work(s), {n_poets + n_works + 1} pages.")
     print(f"Output: {SITE_DIR}")
 
 

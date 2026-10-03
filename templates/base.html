@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{lang}}" dir="{{dir}}">
+<html lang="{{lang}}" dir="{{dir}}" data-ui-lang="{{lang}}" data-default-lang="{{lang}}" data-title-fa="{{title_fa}}" data-title-en="{{title_en}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -30,7 +30,7 @@
         <a id="pb-close" class="pb-close" href="#" aria-label="Close player">&#215;</a>
       </div>
       <nav>
-        <a class="lang-switch" href="{{lang_switch_url}}" title="{{lang_switch_title}}">{{lang_switch_label}}</a>
+        <a class="lang-switch" id="lang-switch" href="#" title="فارسی / English"><span data-lang="fa">EN</span><span data-lang="en">فا</span></a>
         <button id="theme-toggle" aria-label="Toggle theme"></button>
       </nav>
     </div>
@@ -52,5 +52,6 @@
   </footer>
   <script src="{{script_url}}" defer></script>
   <script src="{{footnotes_script_url}}" defer></script>
+  <script src="{{lang_script_url}}" defer></script>
 </body>
 </html>
