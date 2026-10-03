@@ -519,18 +519,47 @@ html[dir="rtl"] .book-head {
 }
 
 @media (max-width: 700px) {
-  .pb-title,
+  /* Let the header wrap so the player gets its own row instead of cramming. */
+  header .container {
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
+  }
+
+  /* Keep only the current book in the breadcrumb on small screens. */
+  .crumb .sep,
+  .crumb > a {
+    display: none;
+  }
+
+  .crumb-current {
+    max-width: 40vw;
+  }
+
+  .playerbar {
+    flex: 1 0 100%;
+    order: 3;
+    height: auto;
+    margin: 0;
+    gap: 0.45rem;
+  }
+
+  .pb-meta {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .pb-title {
+    width: auto;
+    max-width: 34vw;
+  }
+
   .pb-time {
     display: none;
   }
 
-  .playerbar {
-    margin: 0 0.5rem;
-  }
-
   .pb-progress {
-    flex-basis: 110px;
-    width: 110px;
+    flex: 1 1 auto;
+    width: auto;
   }
 }
 

@@ -539,10 +539,12 @@ def build():
                     back_label=LABELS[lang]["back_poet"],
                 )
                 crumb = (
+                    '<span class="crumb">'
                     f'<span class="sep">/</span>'
                     f'<a href="{rel(out, out_poet(lang, poet), is_dir=True)}">{html.escape(poet_name(poet, lang))}</a>'
                     f'<span class="sep">/</span>'
                     f'<span class="crumb-current">{html.escape(book_title(book, lang))}</span>'
+                    "</span>"
                 )
                 page(lang, out, f"{book_title(book, lang)} — {site_title(lang)}", content,
                      out_book("en" if lang == "fa" else "fa", poet, book), crumb=crumb)
