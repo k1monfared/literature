@@ -139,14 +139,37 @@
   }
   progress.addEventListener("pointerup", endScrub);
   progress.addEventListener("pointercancel", endScrub);
-  progress.addEventListener("keydown", function (e) {
-    if (!audio.duration) return;
-    var step = e.shiftKey ? 30 : 5;
-    if (e.key === "ArrowLeft") audio.currentTime = Math.max(0, audio.currentTime - step);
-    else if (e.key === "ArrowRight") audio.currentTime = Math.min(audio.duration, audio.currentTime + step);
-    else return;
-    e.preventDefault();
+  function skip(delta) {
+    if (!source() || !audio.duration) return;
+    audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + delta));
     setTime();
+  }
+
+  var rewBtn = document.getElementById("pb-rew");
+  var ffBtn = document.getElementById("pb-ff");
+  if (rewBtn) rewBtn.addEventListener("click", function () { skip(-15); });
+  if (ffBtn) ffBtn.addEventListener("click", function () { skip(15); });
+
+  // Global keyboard shortcuts (only while a track is loaded).
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var el = e.target;
+    var tag = (el && el.tagName ? el.tagName : "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select" || (el && el.isContentEditable)) return;
+    if (!source()) return;
+    var step = e.shiftKey ? 30 : 5;
+    if (e.key === " " || e.code === "Space" || e.key === "Spacebar") {
+      e.preventDefault();
+      if (audio.paused) audio.play();
+      else audio.pause();
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      skip(-step);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      skip(step);
+    }
+    // ArrowUp / ArrowDown are left to the browser so the page still scrolls.
   });
 
   // --- close / clear ---

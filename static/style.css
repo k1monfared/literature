@@ -277,6 +277,25 @@ html[dir="rtl"] .book-head {
   justify-content: center;
 }
 
+.pb-skip {
+  flex: 0 0 auto;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 0.4rem;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pb-skip:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
 .pb-meta {
   display: flex;
   flex: 0 1 auto;
