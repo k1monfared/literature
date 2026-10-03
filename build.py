@@ -380,9 +380,15 @@ def build():
                 if book["audio"]:
                     src = rel(out, book["audio"])
                     title = html.escape(book_title(book, lang), quote=True)
+                    poet_attr = html.escape(poet_name(poet, lang), quote=True)
+                    subtitle = html.escape(book["meta"].get(f"subtitle_{lang}") or "", quote=True)
+                    cover = rel(out, book["cover"]) if book["cover"] else ""
+                    href = rel(out, out_book(lang, poet, book))
                     audio_html = (
                         '<div class="book-audio">'
-                        f'<button class="play-track" data-src="{src}" data-title="{title}">'
+                        f'<button class="play-track" data-src="{src}" data-title="{title}"'
+                        f' data-poet="{poet_attr}" data-subtitle="{subtitle}"'
+                        f' data-cover="{cover}" data-href="{href}">'
                         f'&#9654; {LABELS[lang]["listen"]}</button>'
                         f'<noscript><audio controls preload="metadata" src="{src}"></audio></noscript>'
                         "</div>"

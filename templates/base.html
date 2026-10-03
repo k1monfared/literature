@@ -18,17 +18,29 @@
       </div>
       <div class="playerbar" id="playerbar" dir="ltr" hidden>
         <button id="pb-toggle" class="pb-btn" aria-label="Play">&#9654;</button>
-        <span class="pb-title" id="pb-title"></span>
-        <div class="pb-progress" id="pb-progress" role="slider" aria-label="Seek">
+        <button id="pb-meta" class="pb-meta" aria-label="Track info" aria-expanded="false">
+          <span class="pb-title" id="pb-title"></span>
+          <span class="pb-caret" aria-hidden="true">&#9662;</span>
+        </button>
+        <div class="pb-progress" id="pb-progress" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <span class="pb-fill" id="pb-fill"></span>
         </div>
         <span class="pb-time" id="pb-time">0:00 / 0:00</span>
+        <button id="pb-speed" class="pb-speed" aria-label="Playback speed" title="Playback speed">1&#215;</button>
         <a id="pb-close" class="pb-close" href="#" aria-label="Close player">&#215;</a>
       </div>
       <nav>
         <a class="lang-switch" href="{{lang_switch_url}}" title="{{lang_switch_title}}">{{lang_switch_label}}</a>
         <button id="theme-toggle" aria-label="Toggle theme"></button>
       </nav>
+    </div>
+    <div class="pb-panel" id="pb-panel" dir="auto" hidden>
+      <img class="pb-cover" id="pb-cover" alt="" hidden>
+      <div class="pb-info">
+        <div class="pb-info-title" id="pb-info-title"></div>
+        <div class="pb-info-poet" id="pb-info-poet"></div>
+        <div class="pb-info-subtitle" id="pb-info-subtitle"></div>
+      </div>
     </div>
     <audio id="player-audio" preload="metadata"></audio>
   </header>

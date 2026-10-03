@@ -272,23 +272,51 @@ html[dir="rtl"] .book-head {
   justify-content: center;
 }
 
-.pb-title {
+.pb-meta {
+  display: flex;
   flex: 0 1 auto;
-  max-width: 32%;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
   color: var(--text);
-  font-size: 0.9rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pb-title {
+  max-width: 220px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.pb-caret {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.pb-meta[aria-expanded="true"] .pb-caret {
+  transform: rotate(180deg);
+}
+
 .pb-progress {
-  flex: 1 1 auto;
+  flex: 0 0 200px;
+  width: 200px;
   height: 6px;
   background: var(--border);
   border-radius: 999px;
   cursor: pointer;
+  touch-action: none;
   overflow: hidden;
+}
+
+.pb-progress:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 3px;
 }
 
 .pb-fill {
@@ -319,6 +347,74 @@ html[dir="rtl"] .book-head {
   color: var(--text);
 }
 
+.pb-speed {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.4rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pb-speed:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+/* Expanded track panel */
+.pb-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem var(--container-padding) 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--header-bg);
+}
+
+.pb-panel[hidden] {
+  display: none;
+}
+
+.pb-cover {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.pb-info {
+  min-width: 0;
+}
+
+.pb-info-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.pb-info-title a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.pb-info-title a:hover {
+  color: var(--link);
+}
+
+.pb-info-poet {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.pb-info-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 0.15rem;
+}
+
 @media (max-width: 700px) {
   .pb-title,
   .pb-time {
@@ -327,6 +423,11 @@ html[dir="rtl"] .book-head {
 
   .playerbar {
     margin: 0 0.5rem;
+  }
+
+  .pb-progress {
+    flex-basis: 110px;
+    width: 110px;
   }
 }
 

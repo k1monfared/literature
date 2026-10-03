@@ -6,12 +6,24 @@
   var audio = document.getElementById("player-audio");
   var bar = document.getElementById("playerbar");
   var toggle = document.getElementById("pb-toggle");
+  var metaBtn = document.getElementById("pb-meta");
   var titleEl = document.getElementById("pb-title");
   var fill = document.getElementById("pb-fill");
   var progress = document.getElementById("pb-progress");
   var timeEl = document.getElementById("pb-time");
+  var speedBtn = document.getElementById("pb-speed");
   var closeBtn = document.getElementById("pb-close");
+  var panel = document.getElementById("pb-panel");
+  var coverEl = document.getElementById("pb-cover");
+  var infoTitle = document.getElementById("pb-info-title");
+  var infoPoet = document.getElementById("pb-info-poet");
+  var infoSubtitle = document.getElementById("pb-info-subtitle");
   if (!audio || !bar) return;
+
+  var SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  var speedIndex = 2;
+  var scrubbing = false;
+  var scrubRatio = 0;
 
   function fmt(t) {
     if (!isFinite(t) || t < 0) return "0:00";
@@ -32,55 +44,143 @@
   }
 
   function setTime() {
-    if (audio.duration) {
-      fill.style.width = (audio.currentTime / audio.duration) * 100 + "%";
-    }
-    timeEl.textContent = fmt(audio.currentTime) + " / " + fmt(audio.duration);
+    var dur = audio.duration || 0;
+    var pos = scrubbing ? scrubRatio * dur : audio.currentTime;
+    if (dur) fill.style.width = ((pos / dur) * 100).toFixed(2) + "%";
+    timeEl.textContent = fmt(pos) + " / " + fmt(dur);
+    progress.setAttribute("aria-valuenow", dur ? Math.round((pos / dur) * 100) : 0);
   }
 
   audio.addEventListener("play", refresh);
   audio.addEventListener("pause", refresh);
   audio.addEventListener("ended", refresh);
-  audio.addEventListener("timeupdate", setTime);
+  audio.addEventListener("timeupdate", function () {
+    if (!scrubbing) setTime();
+  });
   audio.addEventListener("loadedmetadata", setTime);
 
+  // --- play / pause ---
   toggle.addEventListener("click", function () {
+    if (!source()) return;
     if (audio.paused) audio.play();
     else audio.pause();
   });
 
-  progress.addEventListener("click", function (e) {
-    if (!audio.duration) return;
+  // --- expandable track info ---
+  function setPanel(open) {
+    panel.hidden = !open;
+    metaBtn.setAttribute("aria-expanded", String(open));
+  }
+  metaBtn.addEventListener("click", function () {
+    setPanel(panel.hidden);
+  });
+  document.addEventListener("click", function (e) {
+    if (panel.hidden) return;
+    if (e.target.closest("#pb-panel") || e.target.closest("#pb-meta")) return;
+    setPanel(false);
+  });
+
+  // --- speed ---
+  function setSpeed() {
+    audio.playbackRate = SPEEDS[speedIndex];
+    speedBtn.textContent = SPEEDS[speedIndex] + "\u00d7";
+  }
+  speedBtn.addEventListener("click", function () {
+    speedIndex = (speedIndex + 1) % SPEEDS.length;
+    setSpeed();
+  });
+
+  // --- scrubbing ---
+  function ratioFrom(e) {
     var rect = progress.getBoundingClientRect();
-    var ratio = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
-    audio.currentTime = ratio * audio.duration;
+    return Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+  }
+  progress.addEventListener("pointerdown", function (e) {
+    if (!audio.duration) return;
+    scrubbing = true;
+    scrubRatio = ratioFrom(e);
+    if (progress.setPointerCapture) progress.setPointerCapture(e.pointerId);
+    setTime();
+  });
+  progress.addEventListener("pointermove", function (e) {
+    if (!scrubbing) return;
+    scrubRatio = ratioFrom(e);
+    setTime();
+  });
+  function endScrub(e) {
+    if (!scrubbing) return;
+    scrubbing = false;
+    if (progress.releasePointerCapture && e.pointerId !== undefined) {
+      try { progress.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+    if (audio.duration) audio.currentTime = scrubRatio * audio.duration;
+    setTime();
+  }
+  progress.addEventListener("pointerup", endScrub);
+  progress.addEventListener("pointercancel", endScrub);
+  progress.addEventListener("keydown", function (e) {
+    if (!audio.duration) return;
+    var step = e.shiftKey ? 30 : 5;
+    if (e.key === "ArrowLeft") audio.currentTime = Math.max(0, audio.currentTime - step);
+    else if (e.key === "ArrowRight") audio.currentTime = Math.min(audio.duration, audio.currentTime + step);
+    else return;
+    e.preventDefault();
     setTime();
   });
 
+  // --- close / clear ---
   closeBtn.addEventListener("click", function (e) {
     e.preventDefault();
     audio.pause();
     audio.removeAttribute("src");
     audio.load();
+    titleEl.textContent = "";
     fill.style.width = "0%";
     timeEl.textContent = "0:00 / 0:00";
-    refresh();
+    setPanel(false);
+    bar.hidden = true;
   });
 
-  // Play buttons anywhere on the site (delegated, so it survives <main> swaps).
+  // --- loading a track from any play button (delegated) ---
+  function loadMeta(btn) {
+    var abs = function (v) {
+      return v ? new URL(v, location.href).href : "";
+    };
+    var title = btn.getAttribute("data-title") || "";
+    titleEl.textContent = title;
+    infoTitle.textContent = "";
+    if (btn.getAttribute("data-href")) {
+      var a = document.createElement("a");
+      a.href = abs(btn.getAttribute("data-href"));
+      a.textContent = title;
+      infoTitle.appendChild(a);
+    } else {
+      infoTitle.textContent = title;
+    }
+    infoPoet.textContent = btn.getAttribute("data-poet") || "";
+    infoSubtitle.textContent = btn.getAttribute("data-subtitle") || "";
+    var cover = abs(btn.getAttribute("data-cover"));
+    if (cover) {
+      coverEl.src = cover;
+      coverEl.hidden = false;
+    } else {
+      coverEl.hidden = true;
+    }
+  }
+
   document.addEventListener("click", function (e) {
     var btn = e.target.closest ? e.target.closest(".play-track") : null;
     if (!btn) return;
     e.preventDefault();
     var src = new URL(btn.getAttribute("data-src"), location.href).href;
-    var title = btn.getAttribute("data-title") || "";
     if (source() === src) {
       if (audio.paused) audio.play();
       else audio.pause();
       return;
     }
+    loadMeta(btn);
     audio.src = src;
-    titleEl.textContent = title;
+    setSpeed();
     bar.hidden = false;
     audio.play();
   });
