@@ -29,6 +29,27 @@
   var currentKey = "";
   var tracksBySrc = {};
   var shownKey = "";
+  var trackButtons = [];
+  var bookButtons = [];
+  var SVG_PLAY =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  var SVG_PAUSE =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+
+  function setIcon(el, pause) {
+    var ico = el.querySelector ? el.querySelector(".ico") : null;
+    (ico || el).innerHTML = pause ? SVG_PAUSE : SVG_PLAY;
+  }
+
+  function updateTrackIcons() {
+    var playing = !audio.paused && !audio.ended;
+    for (var i = 0; i < trackButtons.length; i++) {
+      setIcon(trackButtons[i].el, playing && trackButtons[i].key === shownKey);
+    }
+    for (var j = 0; j < bookButtons.length; j++) {
+      setIcon(bookButtons[j].el, playing && bookButtons[j].src === loadedSrc);
+    }
+  }
 
   function parseStart(v) {
     if (!v) return 0;
@@ -53,9 +74,10 @@
 
   function refresh() {
     var paused = audio.paused;
-    toggle.innerHTML = paused ? "&#9654;" : "&#10074;&#10074;";
+    toggle.innerHTML = paused ? SVG_PLAY : SVG_PAUSE;
     toggle.setAttribute("aria-label", paused ? "Play" : "Pause");
     bar.hidden = !source();
+    updateTrackIcons();
   }
 
   function setTime() {
@@ -148,11 +170,6 @@
     setTime();
   }
 
-  var rewBtn = document.getElementById("pb-rew");
-  var ffBtn = document.getElementById("pb-ff");
-  if (rewBtn) rewBtn.addEventListener("click", function () { skip(-15); });
-  if (ffBtn) ffBtn.addEventListener("click", function () { skip(15); });
-
   // Global keyboard shortcuts (only while a track is loaded).
   document.addEventListener("keydown", function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -233,21 +250,29 @@
   // playback position as it crosses from one poem into the next.
   function refreshTracks() {
     tracksBySrc = {};
+    trackButtons = [];
+    bookButtons = [];
     var seen = {};
     var buttons = document.querySelectorAll(".track-play");
     for (var i = 0; i < buttons.length; i++) {
       var m = metaFrom(buttons[i]);
       if (!m.src) continue;
       var k = m.src + "|" + m.start;
+      trackButtons.push({ el: buttons[i], key: k });
       if (seen[k]) continue;
       seen[k] = 1;
       (tracksBySrc[m.src] = tracksBySrc[m.src] || []).push(m);
+    }
+    var bbuttons = document.querySelectorAll(".play-track");
+    for (var j = 0; j < bbuttons.length; j++) {
+      bookButtons.push({ el: bbuttons[j], src: metaFrom(bbuttons[j]).src });
     }
     for (var s in tracksBySrc) {
       tracksBySrc[s].sort(function (a, b) {
         return a.start - b.start;
       });
     }
+    updateTrackIcons();
   }
 
   function activeTrackFor(pos) {
@@ -268,6 +293,7 @@
     if (k !== shownKey) {
       shownKey = k;
       applyMeta(t);
+      updateTrackIcons();
     }
   }
 

@@ -192,6 +192,11 @@ def parse_time(value):
     return total
 
 
+_SVG_PLAY = (
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+    '<path d="M8 5v14l11-7z"/></svg>'
+)
+
 _DEF_BTN = (
     '<button class="track-play" data-src="{src}" data-start="{start}"'
     ' data-title="{title}" data-poet="{poet}" data-subtitle="{subtitle}"'
@@ -199,7 +204,8 @@ _DEF_BTN = (
 )
 
 
-def inject_tracks(html_text, tracks, *, src, poet, subtitle, cover, href, icon="&#9654;"):
+def inject_tracks(html_text, tracks, *, src, poet, subtitle, cover, href,
+                  icon='<span class="ico">' + _SVG_PLAY + "</span>"):
     """Add a play button next to each poem title (and its TOC entry) that seeks
     the shared player to that poem's timestamp. `tracks` items are either a
     time string (matched to poems in order) or a dict with start/title/anchor."""
@@ -275,9 +281,24 @@ def inject_tracks(html_text, tracks, *, src, poet, subtitle, cover, href, icon="
     return html_text
 
 
+def link_headings(html_text):
+    """Make each poem heading a link to its own anchor so the URL hash updates."""
+    def repl(m):
+        anchor, attrs, content = m.group(1), m.group(2), m.group(3)
+        return (
+            f'<p><a id="{anchor}"></a></p>'
+            f'<h2{attrs}><a class="heading-link" href="#{anchor}">{content}</a></h2>'
+        )
+
+    return re.sub(
+        r'<p>\s*<a id="(poem-\d+)"></a>\s*</p>\s*<h2([^>]*)>(.*?)</h2>',
+        repl,
+        html_text,
+        flags=re.DOTALL,
+    )
+
+
 def md_to_html(text):
-    # [ref: URL]  ->  a small source line with a real link
-    text = re.sub(r"^\[ref:\s*(\S+?)\]\s*$", r"منبع: <\1>", text, count=1, flags=re.MULTILINE)
     # ![caption](file.m4a)  ->  <audio>
     def media(match):
         cap = match.group(1).strip()
@@ -295,7 +316,7 @@ def md_to_html(text):
         extensions=MD_EXTENSIONS,
         extension_configs={"toc": {"slugify": unicode_slugify}},
     )
-    return extract_footnotes(md.convert(text))
+    return link_headings(extract_footnotes(md.convert(text)))
 
 
 def rel(from_out, to_out, is_dir=False):
@@ -493,7 +514,8 @@ def build():
                         f'<button class="play-track" data-src="{src}" data-title="{title}"'
                         f' data-poet="{poet_attr}" data-subtitle="{subtitle}"'
                         f' data-cover="{cover}" data-href="{href}">'
-                        f'&#9654; {LABELS[lang]["listen"]}</button>'
+                        f'<span class="ico">{_SVG_PLAY}</span>'
+                        f'<span class="lbl">{LABELS[lang]["listen"]}</span></button>'
                         f'<noscript><audio controls preload="metadata" src="{src}"></audio></noscript>'
                         "</div>"
                     )

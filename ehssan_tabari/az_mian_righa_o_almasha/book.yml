@@ -23,23 +23,35 @@ audio: اشعار احسان طبری با صدای شاعر به همراهی �
 #     - start: "3:21"
 #       anchor: poem-2
 tracks:
-  - start: "34:00"
-    anchor: poem-1
   - start: "0:19"
-    anchor: poem-2
+    anchor: poem-1
   - start: "2:45"
-    anchor: poem-3
+    anchor: poem-2
   - start: "5:01"
-    anchor: poem-4
+    anchor: poem-3
   - start: "10:18"
-    anchor: poem-5
+    anchor: poem-4
   - start: "12:35"
-    anchor: poem-6
+    anchor: poem-5
   - start: "14:19"
-    anchor: poem-7
+    anchor: poem-6
   - start: "17:20"
+    anchor: poem-7
+  - start: "20:50"
     anchor: poem-8
-  - start: "20:50"
+  - start: "29:03"
     anchor: poem-9
-  - start: "20:50"
+  - start: "32:27"
     anchor: poem-10
+  - start: "33:47"
+    anchor: poem-11
+  - start: "41:04"
+    anchor: poem-12
+  - start: "43:08"
+    anchor: poem-13
+  - start: "44:20"
+    anchor: poem-14
+  - start: "46:20"
+    anchor: poem-15
+  - start: "50:02"
+    anchor: poem-16
