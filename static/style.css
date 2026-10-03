@@ -220,6 +220,143 @@ html[dir="rtl"] .book-head {
   max-width: 620px;
 }
 
+.play-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.4rem;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--link);
+  background: transparent;
+  border: 1px solid var(--link);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.play-track:hover {
+  background: var(--link);
+  color: var(--bg);
+}
+
+/* Persistent header player */
+.playerbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--border);
+  margin-top: 0.5rem;
+}
+
+.playerbar[hidden] {
+  display: none;
+}
+
+.pb-btn {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--link);
+  color: var(--bg);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pb-title {
+  flex: 0 1 auto;
+  max-width: 32%;
+  color: var(--text);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-progress {
+  flex: 1 1 auto;
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.pb-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--link);
+  border-radius: 999px;
+}
+
+.pb-time {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.pb-close {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
+.pb-close:hover {
+  color: var(--text);
+}
+
+/* Footnote popups */
+.fnref {
+  cursor: help;
+}
+
+.fn-def {
+  display: none;
+}
+
+.footnotes[hidden] {
+  display: none;
+}
+
+.fn-popup {
+  position: fixed;
+  z-index: 300;
+  max-width: min(420px, calc(100vw - 24px));
+  background: var(--header-bg, #16213e);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-rtl);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  direction: rtl;
+  text-align: right;
+}
+
+.fn-popup[hidden] {
+  display: none;
+}
+
+.fn-term {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--link);
+}
+
 /* Poetry body */
 .poetry {
   font-family: var(--font-rtl);

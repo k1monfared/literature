@@ -133,6 +133,45 @@ def copy_asset(src, dest_dir, dest_name):
     return dest
 
 
+FN_PARA_RE = re.compile(r'<p>\s*<a id="(fn-[\w-]+)"></a>(.*?)</p>', re.DOTALL)
+FN_REF_RE = re.compile(r'<a href="#(fn-[\w-]+)">')
+
+
+def extract_footnotes(html):
+    """Pull the glossary lines out of the flow and turn them into hidden
+    definitions that the in-text links reveal as a popup."""
+    defs = []
+
+    def repl(match):
+        fid, inner = match.group(1), match.group(2)
+        headword = ""
+        link = re.match(r'\s*<a href="#w-[\w-]+">(.*?)</a>', inner, re.DOTALL)
+        if link:
+            headword = link.group(1).strip()
+            inner = inner[link.end():]
+        idx = inner.find(" = ")
+        sep = 3
+        if idx == -1:
+            idx = inner.find(": ")
+            sep = 2
+        if idx == -1:
+            before, body = "", inner.strip()
+        else:
+            before, body = inner[:idx].strip(), inner[idx + sep:].strip()
+        title = before or headword
+        content = f'<b class="fn-term">{title}</b> {body}' if title else body
+        defs.append(f'<span class="fn-def" id="{fid}">{content}</span>')
+        return ""
+
+    out = FN_PARA_RE.sub(repl, html)
+    out = FN_REF_RE.sub(
+        lambda m: f'<a class="fnref" data-fn="{m.group(1)}" href="#{m.group(1)}">', out
+    )
+    if defs:
+        out += '\n<div class="footnotes" hidden>' + "".join(defs) + "</div>"
+    return out
+
+
 def md_to_html(text):
     # [ref: URL]  ->  a small source line with a real link
     text = re.sub(r"^\[ref:\s*(\S+?)\]\s*$", r"منبع: <\1>", text, count=1, flags=re.MULTILINE)
@@ -153,7 +192,7 @@ def md_to_html(text):
         extensions=MD_EXTENSIONS,
         extension_configs={"toc": {"slugify": unicode_slugify}},
     )
-    return md.convert(text)
+    return extract_footnotes(md.convert(text))
 
 
 def rel(from_out, to_out, is_dir=False):
@@ -192,7 +231,9 @@ def build():
     if SITE_DIR.exists():
         shutil.rmtree(SITE_DIR)
     (SITE_DIR / "static").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(STATIC_DIR / "style.css", SITE_DIR / "static" / "style.css")
+    for asset in STATIC_DIR.iterdir():
+        if asset.is_file():
+            shutil.copy2(asset, SITE_DIR / "static" / asset.name)
 
     def site_title(lang):
         return site_meta.get(f"title_{lang}") or ("ادبیات" if lang == "fa" else "Literature")
@@ -251,6 +292,8 @@ def build():
             lang_switch_label=LABELS[lang]["lang_switch"],
             lang_switch_title=LABELS[lang]["lang_switch_title"],
             style_url=rel(out_path, SITE_DIR / "static" / "style.css"),
+            script_url=rel(out_path, SITE_DIR / "static" / "player.js"),
+            footnotes_script_url=rel(out_path, SITE_DIR / "static" / "footnotes.js"),
             content=content,
             footer=footer(lang),
         )
@@ -335,9 +378,13 @@ def build():
                     )
                 audio_html = ""
                 if book["audio"]:
+                    src = rel(out, book["audio"])
+                    title = html.escape(book_title(book, lang), quote=True)
                     audio_html = (
                         '<div class="book-audio">'
-                        f'<audio controls preload="metadata" src="{rel(out, book["audio"])}"></audio>'
+                        f'<button class="play-track" data-src="{src}" data-title="{title}">'
+                        f'&#9654; {LABELS[lang]["listen"]}</button>'
+                        f'<noscript><audio controls preload="metadata" src="{src}"></audio></noscript>'
                         "</div>"
                     )
                 content = render(

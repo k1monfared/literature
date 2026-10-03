@@ -21,6 +21,16 @@
         <button id="theme-toggle" aria-label="Toggle theme"></button>
       </nav>
     </div>
+    <div class="container playerbar" id="playerbar" hidden>
+      <button id="pb-toggle" class="pb-btn" aria-label="Play">&#9654;</button>
+      <span class="pb-title" id="pb-title"></span>
+      <div class="pb-progress" id="pb-progress" role="slider" aria-label="Seek">
+        <span class="pb-fill" id="pb-fill"></span>
+      </div>
+      <span class="pb-time" id="pb-time">0:00 / 0:00</span>
+      <a id="pb-close" class="pb-close" href="#" aria-label="Close player">&#215;</a>
+    </div>
+    <audio id="player-audio" preload="metadata"></audio>
   </header>
   <main class="container">
     {{content}}
@@ -28,5 +38,7 @@
   <footer>
     <div class="container">{{footer}}</div>
   </footer>
+  <script src="{{script_url}}" defer></script>
+  <script src="{{footnotes_script_url}}" defer></script>
 </body>
 </html>
