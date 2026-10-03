@@ -187,6 +187,7 @@
 
   // --- client-side navigation so the player keeps playing ---
   var canFetch = location.protocol === "http:" || location.protocol === "https:";
+  var loadedKey = location.pathname + location.search;
 
   function swap(html, url, push) {
     var doc = new DOMParser().parseFromString(html, "text/html");
@@ -196,7 +197,22 @@
     var current = document.querySelector("main");
     current.replaceWith(document.importNode(incoming, true));
     document.title = doc.title;
-    window.scrollTo(0, 0);
+    var u = new URL(url, location.href);
+    loadedKey = u.pathname + u.search;
+    if (u.hash) scrollToId(u.hash);
+    else window.scrollTo(0, 0);
+  }
+
+  function scrollToId(hash) {
+    var id;
+    try {
+      id = decodeURIComponent(hash.replace(/^#/, ""));
+    } catch (_) {
+      return;
+    }
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView();
+    else window.scrollTo(0, 0);
   }
 
   function navigate(url, push) {
@@ -236,6 +252,9 @@
       navigate(url.href, true);
     });
     window.addEventListener("popstate", function () {
+      // Fragment-only changes also fire popstate in some browsers; in that
+      // case the document is the same and the browser handles the anchor.
+      if (location.pathname + location.search === loadedKey) return;
       navigate(location.href, false);
     });
   }

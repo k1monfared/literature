@@ -1,5 +1,10 @@
 /* Literature site styles. Shared base/nav styles come from site_kit. */
 
+/* Keep in-page anchor targets clear of the sticky header. */
+html {
+  scroll-padding-top: 5rem;
+}
+
 main {
   padding: 2rem 0 4rem;
 }
