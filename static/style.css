@@ -544,13 +544,12 @@ html[dir="rtl"] .book-head {
   }
 
   .pb-meta {
-    flex: 0 1 auto;
-    min-width: 0;
+    flex: 0 0 auto;
   }
 
   .pb-title {
-    width: auto;
-    max-width: 34vw;
+    width: 32vw;
+    max-width: none;
   }
 
   .pb-time {
