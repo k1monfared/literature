@@ -27,6 +27,8 @@
   var pendingStart = null;
   var loadedSrc = "";
   var currentKey = "";
+  var tracksBySrc = {};
+  var shownKey = "";
 
   function parseStart(v) {
     if (!v) return 0;
@@ -62,6 +64,7 @@
     if (dur) fill.style.width = ((pos / dur) * 100).toFixed(2) + "%";
     timeEl.textContent = fmt(pos) + " / " + fmt(dur);
     progress.setAttribute("aria-valuenow", dur ? Math.round((pos / dur) * 100) : 0);
+    updateActiveTitle(pos);
   }
 
   audio.addEventListener("play", refresh);
@@ -186,65 +189,121 @@
     loadedSrc = "";
     currentKey = "";
     pendingStart = null;
+    shownKey = "";
   });
 
-  // --- loading a track from any play button (delegated) ---
-  function loadMeta(btn) {
+  // --- track metadata ---
+  function metaFrom(btn) {
     var abs = function (v) {
       return v ? new URL(v, location.href).href : "";
     };
-    var title = btn.getAttribute("data-title") || "";
-    titleEl.textContent = title;
+    return {
+      src: abs(btn.getAttribute("data-src")),
+      start: parseStart(btn.getAttribute("data-start")),
+      title: btn.getAttribute("data-title") || "",
+      poet: btn.getAttribute("data-poet") || "",
+      subtitle: btn.getAttribute("data-subtitle") || "",
+      cover: abs(btn.getAttribute("data-cover")),
+      href: abs(btn.getAttribute("data-href")),
+    };
+  }
+
+  function applyMeta(m) {
+    titleEl.textContent = m.title;
     infoTitle.textContent = "";
-    if (btn.getAttribute("data-href")) {
+    if (m.href) {
       var a = document.createElement("a");
-      a.href = abs(btn.getAttribute("data-href"));
-      a.textContent = title;
+      a.href = m.href;
+      a.textContent = m.title;
       infoTitle.appendChild(a);
     } else {
-      infoTitle.textContent = title;
+      infoTitle.textContent = m.title;
     }
-    infoPoet.textContent = btn.getAttribute("data-poet") || "";
-    infoSubtitle.textContent = btn.getAttribute("data-subtitle") || "";
-    var cover = abs(btn.getAttribute("data-cover"));
-    if (cover) {
-      coverEl.src = cover;
+    infoPoet.textContent = m.poet;
+    infoSubtitle.textContent = m.subtitle;
+    if (m.cover) {
+      coverEl.src = m.cover;
       coverEl.hidden = false;
     } else {
       coverEl.hidden = true;
     }
   }
 
+  // Collect the per-poem timestamps in the page so the title can follow the
+  // playback position as it crosses from one poem into the next.
+  function refreshTracks() {
+    tracksBySrc = {};
+    var seen = {};
+    var buttons = document.querySelectorAll(".track-play");
+    for (var i = 0; i < buttons.length; i++) {
+      var m = metaFrom(buttons[i]);
+      if (!m.src) continue;
+      var k = m.src + "|" + m.start;
+      if (seen[k]) continue;
+      seen[k] = 1;
+      (tracksBySrc[m.src] = tracksBySrc[m.src] || []).push(m);
+    }
+    for (var s in tracksBySrc) {
+      tracksBySrc[s].sort(function (a, b) {
+        return a.start - b.start;
+      });
+    }
+  }
+
+  function activeTrackFor(pos) {
+    var list = tracksBySrc[loadedSrc] || [];
+    var active = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].start <= pos + 0.25) active = list[i];
+      else break;
+    }
+    return active;
+  }
+
+  function updateActiveTitle(pos) {
+    if (!loadedSrc) return;
+    var t = activeTrackFor(pos);
+    if (!t) return;
+    var k = t.src + "|" + t.start;
+    if (k !== shownKey) {
+      shownKey = k;
+      applyMeta(t);
+    }
+  }
+
+  // --- loading a track from any play button (delegated) ---
   document.addEventListener("click", function (e) {
     var btn = e.target.closest ? e.target.closest(".play-track, .track-play") : null;
     if (!btn) return;
     e.preventDefault();
-    var src = new URL(btn.getAttribute("data-src"), location.href).href;
-    var start = parseStart(btn.getAttribute("data-start"));
+    var m = metaFrom(btn);
     var isTrack = btn.classList.contains("track-play");
 
     // The book-level button toggles; per-poem buttons always seek and play.
-    if (!isTrack && loadedSrc === src) {
+    if (!isTrack && loadedSrc === m.src) {
       if (audio.paused) audio.play();
       else audio.pause();
       return;
     }
 
-    loadMeta(btn);
-    if (loadedSrc !== src) {
-      pendingStart = start;
-      audio.src = src;
-      loadedSrc = src;
+    applyMeta(m);
+    shownKey = m.src + "|" + m.start;
+    if (loadedSrc !== m.src) {
+      pendingStart = m.start;
+      audio.src = m.src;
+      loadedSrc = m.src;
     } else {
       try {
-        audio.currentTime = start;
+        audio.currentTime = m.start;
       } catch (_) {}
     }
-    currentKey = src + "|" + start;
+    currentKey = m.src + "|" + m.start;
     setSpeed();
     bar.hidden = false;
     audio.play();
   });
+
+  refreshTracks();
 
   // --- client-side navigation so the player keeps playing ---
   var canFetch = location.protocol === "http:" || location.protocol === "https:";
@@ -260,6 +319,7 @@
     document.title = doc.title;
     var u = new URL(url, location.href);
     loadedKey = u.pathname + u.search;
+    refreshTracks();
     if (u.hash) scrollToId(u.hash);
     else window.scrollTo(0, 0);
   }
