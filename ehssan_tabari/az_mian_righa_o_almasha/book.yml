@@ -13,9 +13,9 @@ description_en: >-
 cover: tape cover.jpg
 audio: اشعار احسان طبری با صدای شاعر به همراهی تار محمدرضا لطفی.m4a
 
-# Audio timestamps. When filled, a play button appears next to each poem name
+# Audio timestamps. When filled, a play button appears next to each item's name
 # (in the heading and in the table of contents) that seeks the player there.
-# A plain "M:SS" value is matched to the poems in reading order; a dict with
+# A plain "M:SS" value is matched to the items in reading order; a dict with
 # start/title matches by title, and start/anchor (e.g. poem-2) is explicit.
 #   tracks:
 #     - start: "0:00"

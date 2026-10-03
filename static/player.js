@@ -304,16 +304,20 @@
     e.preventDefault();
     var m = metaFrom(btn);
     var isTrack = btn.classList.contains("track-play");
+    var key = m.src + "|" + m.start;
 
-    // The book-level button toggles; per-poem buttons always seek and play.
-    if (!isTrack && loadedSrc === m.src) {
+    // The book button toggles whenever its audio is loaded; a per-poem button
+    // toggles only when it is the track currently playing/paused.
+    var isActive = loadedSrc === m.src && (isTrack ? key === shownKey : true);
+    if (isActive) {
       if (audio.paused) audio.play();
       else audio.pause();
+      updateTrackIcons();
       return;
     }
 
     applyMeta(m);
-    shownKey = m.src + "|" + m.start;
+    shownKey = key;
     if (loadedSrc !== m.src) {
       pendingStart = m.start;
       audio.src = m.src;
@@ -323,9 +327,10 @@
         audio.currentTime = m.start;
       } catch (_) {}
     }
-    currentKey = m.src + "|" + m.start;
+    currentKey = key;
     setSpeed();
     bar.hidden = false;
+    updateTrackIcons();
     audio.play();
   });
 
