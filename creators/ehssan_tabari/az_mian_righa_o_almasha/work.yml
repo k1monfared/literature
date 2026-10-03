@@ -10,8 +10,8 @@ description_fa: >-
 description_en: >-
   The selected poems of Ehsan Tabari, transcribed from the poet's own
   recordings, with glosses and notes.
-cover: tape cover.jpg
-audio: اشعار احسان طبری با صدای شاعر به همراهی تار محمدرضا لطفی.m4a
+cover: assets/cover.jpg
+audio: assets/audio.m4a
 
 # Audio timestamps. When filled, a play button appears next to each item's name
 # (in the heading and in the table of contents) that seeks the player there.

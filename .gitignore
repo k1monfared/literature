@@ -6,5 +6,5 @@ secrets/
 *.key
 .env
 
-# Generated lyric illustrations (keep the source files, ignore the images)
-lyrics/**/images/
+# Generated media (lyric illustrations, etc.); keep sources, ignore outputs
+**/media/

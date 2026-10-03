@@ -27,11 +27,10 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 ENDPOINT = "https://image.pollinations.ai/prompt/"
-DEFAULT_TEMPLATE = ROOT / "scripts" / "prompts" / "lyric_dreamspace.txt"
+DEFAULT_TEMPLATE = ROOT / "scripts" / "lyrics_images" / "data" / "prompts" / "lyric_dreamspace.txt"
 DEFAULT_KEY_FILE = ROOT / "secrets" / "pollinations.key"
-OUT_ROOT = ROOT / "lyrics"
 NEGATIVE = (
     "text, letters, words, captions, watermark, logo, signature, bright cheerful "
     "colours, saturated carnival lighting, crowded scene, multiple people, extra "
@@ -247,6 +246,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Generate one consistent image per lyric line via Pollinations.AI.")
     parser.add_argument("--lyrics", required=True, help="UTF-8 text file, one lyric line per line.")
     parser.add_argument("--song", default="", help="Slug for the output folder (default from --lyrics).")
+    parser.add_argument("--out", default="media/lyrics", help="Output root, relative to the repo root (default media/lyrics).")
     parser.add_argument("--title", default="", help="Display title (default from --lyrics).")
     parser.add_argument("--template", default=str(DEFAULT_TEMPLATE), help="Prompt template file.")
     parser.add_argument("--model", default="flux", help="Pollinations image model (default flux).")
@@ -281,7 +281,10 @@ def main() -> int:
         stanzas = [[entry for entry in stanza if entry["number"] <= args.limit] for stanza in stanzas]
         stanzas = [stanza for stanza in stanzas if stanza]
 
-    song_dir = OUT_ROOT / song
+    out_root = Path(args.out)
+    if not out_root.is_absolute():
+        out_root = ROOT / out_root
+    song_dir = out_root / song
     image_dir = song_dir / "images"
     image_dir.mkdir(parents=True, exist_ok=True)
 

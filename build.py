@@ -7,13 +7,16 @@ defaults, so dropping a new folder in is enough):
 
     literature/
       literature.yml                 site title/tagline (fa/en)
-      {poet}/
-        poet.yml                     name_fa, name_en, bio_fa, bio_en
-        {book}/
-          book.yml                   title_fa/en, subtitle_fa/en, reader_fa/en,
-                                     description_fa/en, cover, audio
-          text.md                    the book text (markdown)
-          <cover image>, <audio>     auto-discovered if not named in book.yml
+      creators/{creator}/            URL slug = folder name
+        creator.yml                  name_fa, name_en, wiki, lang (poet.yml also read)
+        {work}/                      URL slug = folder name
+          work.yml                   title_fa/en, subtitle, reader, description,
+                                     cover, audio, tracks (book.yml also read)
+          text.md                    the work text (markdown)
+          assets/                    cover, audio, source PDF, other files
+          media/                     generated per-work output (gitignored)
+      site/                          templates/ + static/ for the generator
+      scripts/                       tooling, each self-contained
 
 Usage:
     python build.py
@@ -36,11 +39,14 @@ import markdown
 
 LIT_DIR = Path(__file__).resolve().parent
 SITE_DIR = LIT_DIR / "_site"
-TEMPLATE_DIR = LIT_DIR / "templates"
-STATIC_DIR = LIT_DIR / "static"
-LYRICS_DIR = LIT_DIR / "lyrics"
+CREATORS_DIR = LIT_DIR / "creators"
+TEMPLATE_DIR = LIT_DIR / "site" / "templates"
+STATIC_DIR = LIT_DIR / "site" / "static"
 
-EXCLUDE_DIRS = {"_site", "templates", "static", "scripts", "lyrics", "secrets", "__pycache__", ".git"}
+EXCLUDE_DIRS = {
+    "_site", "site", "templates", "static", "scripts", "creators", "secrets",
+    "media", "assets", "__pycache__", ".git",
+}
 MD_EXTENSIONS = ["extra", "toc", "sane_lists", "md_in_html"]
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif"}
 AUDIO_EXTS = {".m4a", ".mp3", ".ogg", ".oga", ".wav", ".flac", ".opus", ".aac", ".m4b"}
@@ -105,9 +111,17 @@ def first_heading(md_text, skip=("فهرست",)):
     return None
 
 
+def _first_meta(directory, names):
+    for name in names:
+        candidate = directory / name
+        if candidate.is_file():
+            return candidate
+    return directory / names[0]
+
+
 def find_books(poet_dir):
-    """A work is either a subfolder containing markdown, or a markdown file
-    sitting directly in the author folder."""
+    """A work is a subfolder containing markdown (with an optional assets/
+    folder), or a markdown file directly in the creator folder."""
     books = []
     for b in sorted(poet_dir.iterdir()):
         if not b.is_dir() or b.name.startswith(".") or b.name in EXCLUDE_DIRS:
@@ -116,27 +130,38 @@ def find_books(poet_dir):
         if not mds:
             continue
         md_path = b / "text.md" if (b / "text.md").is_file() else mds[0]
-        books.append({"slug": b.name, "dir": b, "md": md_path, "meta_path": b / "book.yml"})
+        books.append({
+            "slug": b.name,
+            "dir": b,
+            "md": md_path,
+            "meta_path": _first_meta(b, ["work.yml", "book.yml"]),
+        })
     for f in sorted(poet_dir.glob("*.md")):
         if f.name.startswith("."):
             continue
-        per_file = poet_dir / (f.stem + ".yml")
-        meta_path = per_file if per_file.is_file() else (poet_dir / "book.yml")
-        books.append({"slug": f.stem, "dir": poet_dir, "md": f, "meta_path": meta_path})
+        books.append({
+            "slug": f.stem,
+            "dir": poet_dir,
+            "md": f,
+            "meta_path": _first_meta(poet_dir, [f.stem + ".yml", "work.yml", "book.yml"]),
+        })
     return books
 
 
 def find_asset(book_dir, exts, preferred_name=None, keyword=None):
     if preferred_name:
-        p = book_dir / preferred_name
-        if p.is_file():
-            return p
-    candidates = [f for f in sorted(book_dir.iterdir()) if f.is_file() and f.suffix.lower() in exts]
+        preferred = book_dir / preferred_name
+        if preferred.is_file():
+            return preferred
+    files = []
+    for d in (book_dir, book_dir / "assets"):
+        if d.is_dir():
+            files += [f for f in sorted(d.iterdir()) if f.is_file() and f.suffix.lower() in exts]
     if keyword:
-        for f in candidates:
+        for f in files:
             if keyword in f.name.lower():
                 return f
-    return candidates[0] if candidates else None
+    return files[0] if files else None
 
 
 def copy_asset(src, dest_dir, dest_name):
@@ -356,13 +381,15 @@ def render(template_name, **kw):
 def discover():
     site_meta = load_yaml(LIT_DIR / "literature.yml")
     poets = []
-    for d in sorted(LIT_DIR.iterdir()):
+    if not CREATORS_DIR.is_dir():
+        return site_meta, poets
+    for d in sorted(CREATORS_DIR.iterdir()):
         if not d.is_dir() or d.name.startswith(".") or d.name in EXCLUDE_DIRS:
             continue
         books = find_books(d)
         if not books:
             continue
-        meta = load_yaml(d / "poet.yml")
+        meta = load_yaml(d / "creator.yml") or load_yaml(d / "poet.yml")
         poets.append({"slug": d.name, "dir": d, "meta": meta, "books": books})
     return site_meta, poets
 
@@ -375,8 +402,23 @@ def build():
     for asset in STATIC_DIR.iterdir():
         if asset.is_file():
             shutil.copy2(asset, SITE_DIR / "static" / asset.name)
-    if LYRICS_DIR.exists():
-        shutil.copytree(LYRICS_DIR, SITE_DIR / "lyrics")
+    # Publish generated per-work media (e.g. lyric visual pages) under /lyrics/
+    # so their URLs stay stable regardless of where they live in the source.
+    lyrics_out = SITE_DIR / "lyrics"
+    for poet in poets:
+        for book in poet["books"]:
+            media = book["dir"] / "media"
+            if not media.is_dir():
+                continue
+            lyrics_out.mkdir(parents=True, exist_ok=True)
+            for item in sorted(media.iterdir()):
+                if item.name.startswith("."):
+                    continue
+                dest = lyrics_out / item.name
+                if item.is_dir():
+                    shutil.copytree(item, dest, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, dest)
 
     site_fa = site_meta.get("title_fa") or "ادبیات"
     site_en = site_meta.get("title_en") or "Literature"
