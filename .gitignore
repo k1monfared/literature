@@ -5,3 +5,6 @@ __pycache__/
 secrets/
 *.key
 .env
+
+# Generated lyric illustrations (keep the source files, ignore the images)
+lyrics/**/images/
