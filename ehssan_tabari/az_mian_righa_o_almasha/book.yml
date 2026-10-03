@@ -22,4 +22,10 @@ audio: اشعار احسان طبری با صدای شاعر به همراهی �
 #       title: از میان ریگ‌ها و الماس‌ها
 #     - start: "3:21"
 #       anchor: poem-2
-tracks: []
+tracks:
+  - start: "0:00"
+    anchor: poem-1
+  - start: "2:30"
+    anchor: poem-2
+  - start: "5:15"
+    anchor: poem-3
