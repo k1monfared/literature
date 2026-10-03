@@ -27,5 +27,11 @@ tracks:
     anchor: poem-1
   - start: "0:19"
     anchor: poem-2
-  - start: "5:15"
+  - start: "2:45"
     anchor: poem-3
+  - start: "5:01"
+    anchor: poem-4
+  - start: "10:18"
+    anchor: poem-5
+  - start: "10:18"
+    anchor: poem-6

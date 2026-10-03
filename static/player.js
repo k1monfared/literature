@@ -221,23 +221,26 @@
     e.preventDefault();
     var src = new URL(btn.getAttribute("data-src"), location.href).href;
     var start = parseStart(btn.getAttribute("data-start"));
-    var key = src + "|" + start;
-    if (currentKey === key && loadedSrc === src) {
+    var isTrack = btn.classList.contains("track-play");
+
+    // The book-level button toggles; per-poem buttons always seek and play.
+    if (!isTrack && loadedSrc === src) {
       if (audio.paused) audio.play();
       else audio.pause();
       return;
     }
+
     loadMeta(btn);
     if (loadedSrc !== src) {
       pendingStart = start;
       audio.src = src;
       loadedSrc = src;
-    } else if (start) {
+    } else {
       try {
         audio.currentTime = start;
       } catch (_) {}
     }
-    currentKey = key;
+    currentKey = src + "|" + start;
     setSpeed();
     bar.hidden = false;
     audio.play();
