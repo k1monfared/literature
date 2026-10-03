@@ -172,6 +172,109 @@ def extract_footnotes(html):
     return out
 
 
+def parse_time(value):
+    """Accept seconds (int/str) or 'M:SS' / 'H:MM:SS' and return seconds."""
+    if isinstance(value, (int, float)):
+        return int(value)
+    s = str(value).strip()
+    if not s:
+        return None
+    if s.isdigit():
+        return int(s)
+    parts = s.split(":")
+    try:
+        nums = [int(p) for p in parts]
+    except ValueError:
+        return None
+    total = 0
+    for n in nums:
+        total = total * 60 + n
+    return total
+
+
+_DEF_BTN = (
+    '<button class="track-play" data-src="{src}" data-start="{start}"'
+    ' data-title="{title}" data-poet="{poet}" data-subtitle="{subtitle}"'
+    ' data-cover="{cover}" data-href="{href}" aria-label="Play">{icon}</button>'
+)
+
+
+def inject_tracks(html_text, tracks, *, src, poet, subtitle, cover, href, icon="&#9654;"):
+    """Add a play button next to each poem title (and its TOC entry) that seeks
+    the shared player to that poem's timestamp. `tracks` items are either a
+    time string (matched to poems in order) or a dict with start/title/anchor."""
+    heads = re.findall(
+        r'<p>\s*<a id="(poem-\d+)"></a>\s*</p>\s*<h2[^>]*>(.*?)</h2>',
+        html_text,
+        re.DOTALL,
+    )
+    if not heads:
+        return html_text
+    order = [h[0] for h in heads]
+
+    def norm(s):
+        return re.sub(r"\s+", "", re.sub(r"<[^>]+>", "", s))
+
+    title_by_anchor = {h[0]: norm(h[1]) for h in heads}
+    text_by_anchor = {h[0]: re.sub(r"<[^>]+>", "", h[1]).strip() for h in heads}
+
+    resolved = []
+    used = set()
+    auto = 0
+    for item in tracks:
+        if isinstance(item, dict):
+            start = parse_time(item.get("start"))
+            anchor = item.get("anchor")
+            title = item.get("title")
+        else:
+            start, anchor, title = parse_time(item), None, None
+        if start is None:
+            continue
+        if not anchor and title:
+            want = norm(str(title))
+            for a, t in title_by_anchor.items():
+                if t == want and a not in used:
+                    anchor = a
+                    break
+        if not anchor:
+            while auto < len(order) and order[auto] in used:
+                auto += 1
+            if auto < len(order):
+                anchor = order[auto]
+                auto += 1
+        if not anchor or anchor in used:
+            continue
+        used.add(anchor)
+        resolved.append((anchor, start))
+
+    for anchor, start in resolved:
+        btn = _DEF_BTN.format(
+            src=src,
+            start=start,
+            title=html.escape(text_by_anchor.get(anchor, ""), quote=True),
+            poet=html.escape(poet, quote=True),
+            subtitle=html.escape(subtitle, quote=True),
+            cover=cover,
+            href=href,
+            icon=icon,
+        )
+        html_text = re.sub(
+            r'(<p>\s*<a id="%s"></a>\s*</p>\s*<h2[^>]*>)(.*?)(</h2>)' % re.escape(anchor),
+            lambda m: m.group(1) + m.group(2) + " " + btn + m.group(3),
+            html_text,
+            count=1,
+            flags=re.DOTALL,
+        )
+        html_text = re.sub(
+            r'(<li><a href="#%s">.*?</a>)' % re.escape(anchor),
+            lambda m: m.group(1) + " " + btn,
+            html_text,
+            count=1,
+            flags=re.DOTALL,
+        )
+    return html_text
+
+
 def md_to_html(text):
     # [ref: URL]  ->  a small source line with a real link
     text = re.sub(r"^\[ref:\s*(\S+?)\]\s*$", r"منبع: <\1>", text, count=1, flags=re.MULTILINE)
@@ -376,14 +479,15 @@ def build():
                         f'<img src="{rel(out, book["cover"])}" alt="{html.escape(book_title(book, lang))}">'
                         f"</figure>"
                     )
+                src = rel(out, book["audio"]) if book["audio"] else ""
+                cover = rel(out, book["cover"]) if book["cover"] else ""
+                href = rel(out, out_book(lang, poet, book))
+                title = html.escape(book_title(book, lang), quote=True)
+                poet_attr = html.escape(poet_name(poet, lang), quote=True)
+                subtitle_val = book["meta"].get(f"subtitle_{lang}") or ""
+                subtitle = html.escape(subtitle_val, quote=True)
                 audio_html = ""
                 if book["audio"]:
-                    src = rel(out, book["audio"])
-                    title = html.escape(book_title(book, lang), quote=True)
-                    poet_attr = html.escape(poet_name(poet, lang), quote=True)
-                    subtitle = html.escape(book["meta"].get(f"subtitle_{lang}") or "", quote=True)
-                    cover = rel(out, book["cover"]) if book["cover"] else ""
-                    href = rel(out, out_book(lang, poet, book))
                     audio_html = (
                         '<div class="book-audio">'
                         f'<button class="play-track" data-src="{src}" data-title="{title}"'
@@ -393,14 +497,22 @@ def build():
                         f'<noscript><audio controls preload="metadata" src="{src}"></audio></noscript>'
                         "</div>"
                     )
+                body_html = book["html"]
+                tracks = book["meta"].get("tracks") or []
+                if book["audio"] and tracks:
+                    body_html = inject_tracks(
+                        body_html, tracks,
+                        src=src, poet=poet_name(poet, lang), subtitle=subtitle_val,
+                        cover=cover, href=href,
+                    )
                 content = render(
                     "book.html",
                     title=html.escape(book_title(book, lang)),
-                    subtitle=html.escape(book["meta"].get(f"subtitle_{lang}") or ""),
+                    subtitle=html.escape(subtitle_val),
                     reader=html.escape(book["meta"].get(f"reader_{lang}") or ""),
                     cover=cover_html,
                     audio=audio_html,
-                    body=book["html"],
+                    body=body_html,
                     poet_url=rel(out, out_poet(lang, poet), is_dir=True),
                     back_label=LABELS[lang]["back_poet"],
                 )

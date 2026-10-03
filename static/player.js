@@ -24,6 +24,19 @@
   var speedIndex = 2;
   var scrubbing = false;
   var scrubRatio = 0;
+  var pendingStart = null;
+  var loadedSrc = "";
+  var currentKey = "";
+
+  function parseStart(v) {
+    if (!v) return 0;
+    var s = String(v);
+    if (s.indexOf(":") === -1) return Number(s) || 0;
+    var parts = s.split(":").map(Number);
+    var total = 0;
+    for (var i = 0; i < parts.length; i++) total = total * 60 + (parts[i] || 0);
+    return total;
+  }
 
   function fmt(t) {
     if (!isFinite(t) || t < 0) return "0:00";
@@ -57,7 +70,15 @@
   audio.addEventListener("timeupdate", function () {
     if (!scrubbing) setTime();
   });
-  audio.addEventListener("loadedmetadata", setTime);
+  audio.addEventListener("loadedmetadata", function () {
+    if (pendingStart !== null) {
+      try {
+        audio.currentTime = pendingStart;
+      } catch (_) {}
+      pendingStart = null;
+    }
+    setTime();
+  });
 
   // --- play / pause ---
   toggle.addEventListener("click", function () {
@@ -139,6 +160,9 @@
     timeEl.textContent = "0:00 / 0:00";
     setPanel(false);
     bar.hidden = true;
+    loadedSrc = "";
+    currentKey = "";
+    pendingStart = null;
   });
 
   // --- loading a track from any play button (delegated) ---
@@ -169,17 +193,28 @@
   }
 
   document.addEventListener("click", function (e) {
-    var btn = e.target.closest ? e.target.closest(".play-track") : null;
+    var btn = e.target.closest ? e.target.closest(".play-track, .track-play") : null;
     if (!btn) return;
     e.preventDefault();
     var src = new URL(btn.getAttribute("data-src"), location.href).href;
-    if (source() === src) {
+    var start = parseStart(btn.getAttribute("data-start"));
+    var key = src + "|" + start;
+    if (currentKey === key && loadedSrc === src) {
       if (audio.paused) audio.play();
       else audio.pause();
       return;
     }
     loadMeta(btn);
-    audio.src = src;
+    if (loadedSrc !== src) {
+      pendingStart = start;
+      audio.src = src;
+      loadedSrc = src;
+    } else if (start) {
+      try {
+        audio.currentTime = start;
+      } catch (_) {}
+    }
+    currentKey = key;
     setSpeed();
     bar.hidden = false;
     audio.play();
