@@ -16,19 +16,19 @@
         <a class="site-title" href="{{home_url}}">{{site_title}}</a>
         {{crumb}}
       </div>
+      <div class="playerbar" id="playerbar" dir="ltr" hidden>
+        <button id="pb-toggle" class="pb-btn" aria-label="Play">&#9654;</button>
+        <span class="pb-title" id="pb-title"></span>
+        <div class="pb-progress" id="pb-progress" role="slider" aria-label="Seek">
+          <span class="pb-fill" id="pb-fill"></span>
+        </div>
+        <span class="pb-time" id="pb-time">0:00 / 0:00</span>
+        <a id="pb-close" class="pb-close" href="#" aria-label="Close player">&#215;</a>
+      </div>
       <nav>
         <a class="lang-switch" href="{{lang_switch_url}}" title="{{lang_switch_title}}">{{lang_switch_label}}</a>
         <button id="theme-toggle" aria-label="Toggle theme"></button>
       </nav>
-    </div>
-    <div class="container playerbar" id="playerbar" hidden>
-      <button id="pb-toggle" class="pb-btn" aria-label="Play">&#9654;</button>
-      <span class="pb-title" id="pb-title"></span>
-      <div class="pb-progress" id="pb-progress" role="slider" aria-label="Seek">
-        <span class="pb-fill" id="pb-fill"></span>
-      </div>
-      <span class="pb-time" id="pb-time">0:00 / 0:00</span>
-      <a id="pb-close" class="pb-close" href="#" aria-label="Close player">&#215;</a>
     </div>
     <audio id="player-audio" preload="metadata"></audio>
   </header>

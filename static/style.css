@@ -8,6 +8,7 @@ header .container {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  max-width: none;
 }
 
 .header-left {
@@ -240,14 +241,15 @@ html[dir="rtl"] .book-head {
   color: var(--bg);
 }
 
-/* Persistent header player */
+/* Persistent header player (sits inline in the navbar, LTR controls) */
 .playerbar {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.45rem 0;
-  border-top: 1px solid var(--border);
-  margin-top: 0.5rem;
+  min-width: 0;
+  height: var(--nav-button-size, 34px);
+  margin: 0 1rem;
 }
 
 .playerbar[hidden] {
@@ -315,6 +317,17 @@ html[dir="rtl"] .book-head {
 
 .pb-close:hover {
   color: var(--text);
+}
+
+@media (max-width: 700px) {
+  .pb-title,
+  .pb-time {
+    display: none;
+  }
+
+  .playerbar {
+    margin: 0 0.5rem;
+  }
 }
 
 /* Footnote popups */
