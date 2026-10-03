@@ -602,17 +602,14 @@ html[dir="rtl"] .book-head {
   color: var(--link);
 }
 
-/* Poetry body */
+/* Poetry body (direction set per work via dir attribute) */
 .poetry {
-  font-family: var(--font-rtl);
   font-size: 1.12rem;
   line-height: 2;
-  text-align: right;
 }
 
 .poetry h2 {
   font-size: 1.35rem;
-  text-align: right;
   margin: 2.5rem 0 1rem;
 }
 
@@ -626,7 +623,6 @@ html[dir="rtl"] .book-head {
 }
 
 .poetry ul {
-  text-align: right;
   display: inline-block;
   margin: 0.5rem auto 1.5rem;
 }

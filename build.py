@@ -88,8 +88,15 @@ def load_yaml(path):
         return {}
 
 
+def content_dir(text):
+    """Pick a text direction for a work from its dominant script."""
+    persian = len(re.findall(r"[\u0600-\u06FF]", text))
+    latin = len(re.findall(r"[A-Za-z]", text))
+    return "rtl" if persian >= latin else "ltr"
+
+
 def first_heading(md_text, skip=("فهرست",)):
-    for m in re.finditer(r"^##\s+(.+?)\s*#*\s*$", md_text, flags=re.MULTILINE):
+    for m in re.finditer(r"^#{1,2}\s+(.+?)\s*#*\s*$", md_text, flags=re.MULTILINE):
         title = re.sub(r"\{#[^}]*\}$", "", m.group(1)).strip()
         if title and title not in skip:
             return title
@@ -97,6 +104,8 @@ def first_heading(md_text, skip=("فهرست",)):
 
 
 def find_books(poet_dir):
+    """A work is either a subfolder containing markdown, or a markdown file
+    sitting directly in the author folder."""
     books = []
     for b in sorted(poet_dir.iterdir()):
         if not b.is_dir() or b.name.startswith(".") or b.name in EXCLUDE_DIRS:
@@ -105,7 +114,13 @@ def find_books(poet_dir):
         if not mds:
             continue
         md_path = b / "text.md" if (b / "text.md").is_file() else mds[0]
-        books.append({"slug": b.name, "dir": b, "md": md_path})
+        books.append({"slug": b.name, "dir": b, "md": md_path, "meta_path": b / "book.yml"})
+    for f in sorted(poet_dir.glob("*.md")):
+        if f.name.startswith("."):
+            continue
+        per_file = poet_dir / (f.stem + ".yml")
+        meta_path = per_file if per_file.is_file() else (poet_dir / "book.yml")
+        books.append({"slug": f.stem, "dir": poet_dir, "md": f, "meta_path": meta_path})
     return books
 
 
@@ -372,7 +387,7 @@ def build():
     for poet in poets:
         for book in poet["books"]:
             bdir = book["dir"]
-            bmeta = load_yaml(bdir / "book.yml")
+            bmeta = load_yaml(book.get("meta_path") or (bdir / "book.yml"))
             md_text = book["md"].read_text(encoding="utf-8")
             auto_title = first_heading(md_text)
             media_dir = SITE_DIR / "media" / poet["slug"] / book["slug"]
@@ -382,6 +397,7 @@ def build():
             book["audio"] = copy_asset(audio_src, media_dir, "audio" + audio_src.suffix.lower()) if audio_src else None
             book["meta"] = bmeta
             book["auto_title"] = auto_title or book["slug"]
+            book["content_dir"] = content_dir(md_text)
             book["html"] = md_to_html(md_text)
 
     def book_title(book, lang):
@@ -535,6 +551,7 @@ def build():
                     cover=cover_html,
                     audio=audio_html,
                     body=body_html,
+                    body_dir=book["content_dir"],
                     poet_url=rel(out, out_poet(lang, poet), is_dir=True),
                     back_label=LABELS[lang]["back_poet"],
                 )
