@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{lang}}" dir="{{dir}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}}</title>
+  <link rel="stylesheet" href="https://k1monfared.github.io/site_kit/css/base.css">
+  <link rel="stylesheet" href="https://k1monfared.github.io/site_kit/css/nav.css">
+  <link rel="stylesheet" href="{{style_url}}">
+  <script src="https://k1monfared.github.io/site_kit/js/theme.js"></script>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="header-left">
+        <a class="site-title" href="{{home_url}}">{{site_title}}</a>
+        {{crumb}}
+      </div>
+      <nav>
+        <a class="lang-switch" href="{{lang_switch_url}}" title="{{lang_switch_title}}">{{lang_switch_label}}</a>
+        <button id="theme-toggle" aria-label="Toggle theme"></button>
+      </nav>
+    </div>
+  </header>
+  <main class="container">
+    {{content}}
+  </main>
+  <footer>
+    <div class="container">{{footer}}</div>
+  </footer>
+</body>
+</html>

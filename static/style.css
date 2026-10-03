@@ -1,0 +1,288 @@
+/* Literature site styles. Shared base/nav styles come from site_kit. */
+
+main {
+  padding: 2rem 0 4rem;
+}
+
+header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.site-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.site-title:hover {
+  color: var(--link);
+}
+
+.crumb {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.crumb a,
+header .crumb a {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.crumb a:hover {
+  color: var(--link);
+}
+
+.crumb .sep {
+  opacity: 0.5;
+}
+
+.crumb-current {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--nav-button-size, 34px);
+  height: var(--nav-button-size, 34px);
+  padding: 0 0.5rem;
+  border-radius: var(--nav-button-radius, 6px);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.lang-switch:hover {
+  background: var(--border);
+}
+
+.tagline {
+  color: var(--text-muted);
+  margin-top: -0.5rem;
+}
+
+/* Card lists (poets and books) */
+.card-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.card:hover {
+  border-color: var(--link);
+}
+
+.card > a {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.card-thumb {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--code-bg);
+}
+
+.card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.card-meta {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.poet-card {
+  padding: 0.25rem 0.75rem 0.75rem;
+}
+
+.book-links {
+  list-style: none;
+  margin: 0;
+  padding: 0 1rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.book-links a {
+  display: inline-block;
+  font-size: 0.9rem;
+  color: var(--link);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+}
+
+.book-links a:hover {
+  border-color: var(--link);
+}
+
+.section-heading {
+  margin-top: 2rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bio {
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+/* Poet/book pages */
+.book-head {
+  text-align: center;
+}
+
+html[dir="rtl"] .book-head {
+  text-align: right;
+}
+
+.book-head h1 {
+  font-size: 1.7rem;
+  margin-bottom: 0.25rem;
+}
+
+.book-head .subtitle {
+  color: var(--text-muted);
+  margin: 0.25rem 0;
+}
+
+.book-head .reader {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.cover-figure {
+  margin: 1.5rem auto;
+  text-align: center;
+}
+
+.cover-figure img {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.book-audio {
+  margin: 1.5rem auto 2.5rem;
+  text-align: center;
+}
+
+.book-audio audio {
+  width: 100%;
+  max-width: 620px;
+}
+
+/* Poetry body */
+.poetry {
+  font-family: var(--font-rtl);
+  font-size: 1.12rem;
+  line-height: 2;
+  text-align: right;
+}
+
+.poetry h2 {
+  font-size: 1.35rem;
+  text-align: right;
+  margin: 2.5rem 0 1rem;
+}
+
+.poetry ul {
+  text-align: right;
+  display: inline-block;
+  margin: 0.5rem auto 1.5rem;
+}
+
+.poetry hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem auto;
+  max-width: 40%;
+}
+
+.poetry .source-ref,
+.poetry p:first-of-type em {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.poetry a {
+  text-decoration: none;
+  border-bottom: 1px dotted var(--link);
+}
+
+/* Markdown audio figures (from ![caption](file.m4a)) */
+.audio-figure {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.audio-figure audio {
+  width: 100%;
+  max-width: 620px;
+}
+
+.audio-figure figcaption {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: 0.4rem;
+}
+
+.back {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+footer {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 1.5rem 0;
+}
